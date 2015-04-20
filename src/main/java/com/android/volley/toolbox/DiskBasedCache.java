@@ -36,6 +36,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import net.comikon.reader.cache.Utils;
+
 /**
  * Cache implementation that caches files directly onto the hard disk in the specified
  * directory. The default disk usage size is 5MB, but is configurable.
@@ -204,12 +206,12 @@ public class DiskBasedCache implements Cache {
             CacheHeader e = new CacheHeader(key, entry);
             boolean success = e.writeHeader(fos);
             if (!success) {
-                fos.close();
+            	Utils.close(fos);
                 VolleyLog.d("Failed to write header for %s", file.getAbsolutePath());
                 throw new IOException();
             }
             fos.write(entry.data);
-            fos.close();
+            Utils.close(fos);
             putEntry(key, e);
             return;
         } catch (IOException e) {

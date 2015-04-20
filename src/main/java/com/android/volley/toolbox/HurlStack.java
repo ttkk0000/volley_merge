@@ -20,6 +20,8 @@ import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Request.Method;
 
+import net.comikon.reader.cache.Utils;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -194,7 +196,8 @@ public class HurlStack implements HttpStack {
                             request.getPostBodyContentType());
                     DataOutputStream out = new DataOutputStream(connection.getOutputStream());
                     out.write(postBody);
-                    out.close();
+//                    out.close();
+                    Utils.close(out);
                 }
                 break;
             case Method.GET:
@@ -239,7 +242,8 @@ public class HurlStack implements HttpStack {
             connection.addRequestProperty(HEADER_CONTENT_TYPE, request.getBodyContentType());
             DataOutputStream out = new DataOutputStream(connection.getOutputStream());
             out.write(body);
-            out.close();
+//            out.close();
+            Utils.close(out);
         }
     }
 }

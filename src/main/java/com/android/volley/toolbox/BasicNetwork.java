@@ -33,6 +33,8 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
 
+import net.comikon.reader.cache.Utils;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -258,7 +260,8 @@ public class BasicNetwork implements Network {
                 VolleyLog.v("Error occured when calling consumingContent");
             }
             mPool.returnBuf(buffer);
-            bytes.close();
+//            bytes.close();
+            Utils.close(bytes);
         }
     }
 
