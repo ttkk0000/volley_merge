@@ -209,14 +209,12 @@ public class DiskBasedCache implements Cache {
                 throw new IOException();
             }
             fos.write(entry.data);
-            
+            fos.close();
             putEntry(key, e);
             return;
         } catch (IOException e) {
 			e.printStackTrace();
-		} finally {
-			Utils.close(fos);
-        }
+		} 
         boolean deleted = file.delete();
         if (!deleted) {
             VolleyLog.d("Could not clean up file %s", file.getAbsolutePath());

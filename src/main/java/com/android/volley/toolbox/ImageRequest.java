@@ -100,7 +100,7 @@ public class ImageRequest extends Request<Bitmap> {
             Config decodeConfig, Response.ErrorListener errorListener,
             ProcessListener processListener, boolean clip) {
         this(url, listener, maxWidth, maxHeight,
-                ScaleType.CENTER_INSIDE, decodeConfig, errorListener, ProcessListener processListener, boolean clip);
+                ScaleType.CENTER_INSIDE, decodeConfig, errorListener, processListener, clip);
     }
     @Override
     public Priority getPriority() {
@@ -201,10 +201,10 @@ public class ImageRequest extends Request<Bitmap> {
 //                    actualHeight, actualWidth, mScaleType);
 
 			if (isClip) {
-				// ²Ã¼ôÒÔÊÊÅä,±£Ö¤³¤¿í¶¼²»Ð¡ÓÚÄ¿±ê³¤¿í
+				// ï¿½Ã¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ä¿ï¿½ê³¤ï¿½ï¿½
 				float wradio = (float) actualWidth / mMaxWidth;
 				float hradio = (float) actualHeight / mMaxHeight;
-				if (wradio < hradio) {// ¿í½ÏÐ¡
+				if (wradio < hradio) {// ï¿½ï¿½ï¿½Ð¡
 					desiredWidth = (int) (actualWidth / wradio);
 					desiredHeight = (int) (actualHeight / wradio);
 				} else {
@@ -212,8 +212,8 @@ public class ImageRequest extends Request<Bitmap> {
 					desiredHeight = (int) (actualHeight / hradio);
 				}
 			} else {
-				desiredWidth = getResizedDimension(mMaxWidth, mMaxHeight, actualWidth, actualHeight);
-				desiredHeight = getResizedDimension(mMaxHeight, mMaxWidth, actualHeight, actualWidth);
+				desiredWidth = getResizedDimension(mMaxWidth, mMaxHeight, actualWidth, actualHeight, mScaleType);
+				desiredHeight = getResizedDimension(mMaxHeight, mMaxWidth, actualHeight, actualWidth, mScaleType);
 			}
             // Decode to the nearest power of two scaling factor.
             decodeOptions.inJustDecodeBounds = false;

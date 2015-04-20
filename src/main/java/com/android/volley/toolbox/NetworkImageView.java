@@ -66,12 +66,12 @@ public class NetworkImageView extends ImageView {
 	private int mMaxHeight;
 
 	/**
-	 * ÊÇ·ñ²Ã¼ô
+	 * ï¿½Ç·ï¿½Ã¼ï¿½
 	 */
 	private boolean isClip = false;
 
 	/**
-	 * »º´æTag£¬Çø±ðÓÚ¸÷¸öÒ³ÃæµÄCacheKey
+	 * ï¿½ï¿½ï¿½ï¿½Tagï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½ï¿½Ò³ï¿½ï¿½ï¿½CacheKey
 	 */
 	private String mCacheTag;
 
@@ -99,7 +99,7 @@ public class NetworkImageView extends ImageView {
      * @param url The URL that should be loaded into this ImageView.
      * @param imageLoader ImageLoader that will be used to make the request.
      */
-    public void setImageUrl(String url, ImageLoader imageLoader) {
+    public void setImageUrl(String url, ImageLoader imageLoader, String cacheTag) {
         mUrl = url;
         mImageLoader = imageLoader;
 		mMaxWidth = 0;
@@ -187,8 +187,8 @@ public class NetworkImageView extends ImageView {
         }
 
         // Calculate the max image width / height to use while ignoring WRAP_CONTENT dimens.
-        int maxWidth = wrapWidth ? 0 : width;
-        int maxHeight = wrapHeight ? 0 : height;
+//        int maxWidth = wrapWidth ? 0 : width;
+//        int maxHeight = wrapHeight ? 0 : height;
 
         // The pre-existing content of this view didn't match the current URL. Load the new image
         // from the network.
@@ -228,9 +228,9 @@ public class NetworkImageView extends ImageView {
 		};
 		ImageContainer newContainer;
 		if (mMaxWidth != 0 && mMaxHeight != 0) {
-			newContainer = mImageLoader.get(mUrl, imageListener, mMaxWidth, mMaxHeight, null, isClip, mCacheTag);
+			newContainer = mImageLoader.get(mUrl, imageListener, mMaxWidth, mMaxHeight, scaleType, null, isClip, mCacheTag);
 		} else {
-			newContainer = mImageLoader.get(mUrl, imageListener, mCacheTag);
+			newContainer = mImageLoader.get(mUrl, imageListener, scaleType, mCacheTag);
 		}
 
         // update the ImageContainer to be the new bitmap container.
@@ -270,27 +270,9 @@ public class NetworkImageView extends ImageView {
         super.drawableStateChanged();
         invalidate();
     }
-    // pending
-	/**
-	 * @see android.widget.ImageView#onDetachedFromWindow()
-	 */
-	@Override
-	protected void onDetachedFromWindow() {
-		// This has been detached from Window, so clear the drawable
-		setImageBitmap(null);
 
-		if (mImageContainer != null) {
-			// If the view was bound to an image request, cancel it and clear
-			// out the image from the view.
-			mImageContainer.cancelRequest();
-			// also clear out the container so we can reload the image if
-			// necessary.
-			mImageContainer = null;
-		}
-
-		super.onDetachedFromWindow();
-	}
-
+    
+    // belows are add to volley from comikon volley.
 	/**
 	 * @see android.widget.ImageView#setImageDrawable(android.graphics.drawable.Drawable)
 	 */
