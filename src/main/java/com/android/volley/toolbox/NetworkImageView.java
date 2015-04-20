@@ -15,7 +15,13 @@
  */
 package com.android.volley.toolbox;
 
+import net.comikon.reader.utils.cache.RecyclingBitmapDrawable;
+import net.comikon.reader.utils.cache.Utils;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.ViewGroup.LayoutParams;
@@ -49,6 +55,26 @@ public class NetworkImageView extends ImageView {
     /** Current ImageContainer. (either in-flight or finished) */
     private ImageContainer mImageContainer;
 
+	/**
+	 * Target bitmap width
+	 */
+	private int mMaxWidth;
+
+	/**
+	 * Targe bitmap height;
+	 */
+	private int mMaxHeight;
+
+	/**
+	 * 是否裁剪
+	 */
+	private boolean isClip = false;
+
+	/**
+	 * 缓存Tag，区别于各个页面的CacheKey
+	 */
+	private String mCacheTag;
+
     public NetworkImageView(Context context) {
         this(context, null);
     }
@@ -76,8 +102,27 @@ public class NetworkImageView extends ImageView {
     public void setImageUrl(String url, ImageLoader imageLoader) {
         mUrl = url;
         mImageLoader = imageLoader;
+		mMaxWidth = 0;
+		mMaxHeight = 0;
+		mCacheTag = cacheTag;
         // The URL has potentially changed. See if we need to load it.
         loadImageIfNecessary(false);
+	}
+
+	public void setImageUrl(String url, ImageLoader imageLoader, int targetWidth, int targetHeight, String cacheTag) {
+		setImageUrl(url, imageLoader, targetWidth, targetHeight, false, cacheTag);
+	}
+
+	public void setImageUrl(String url, ImageLoader imageLoader, float targetWidth, float targetHeight, boolean clip, String cacheTag) {
+		// TODO Auto-generated method stub
+		mUrl = url;
+		mImageLoader = imageLoader;
+		mMaxWidth = (int) targetWidth;
+		mMaxHeight = (int) targetHeight;
+		mCacheTag = cacheTag;
+		// The URL has potentially changed. See if we need to load it.
+		loadImageIfNecessary(false);
+		isClip = clip;
     }
 
     /**
@@ -147,38 +192,46 @@ public class NetworkImageView extends ImageView {
 
         // The pre-existing content of this view didn't match the current URL. Load the new image
         // from the network.
-        ImageContainer newContainer = mImageLoader.get(mUrl,
-                new ImageListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        if (mErrorImageId != 0) {
-                            setImageResource(mErrorImageId);
-                        }
-                    }
+        ImageListener imageListener = new ImageListener() {
+			@Override
+			public void onErrorResponse(VolleyError error) {
+				if (mErrorImageId != 0) {
+					setImageResource(mErrorImageId);
+				}
+			}
 
-                    @Override
-                    public void onResponse(final ImageContainer response, boolean isImmediate) {
-                        // If this was an immediate response that was delivered inside of a layout
-                        // pass do not set the image immediately as it will trigger a requestLayout
-                        // inside of a layout. Instead, defer setting the image by posting back to
-                        // the main thread.
-                        if (isImmediate && isInLayoutPass) {
-                            post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    onResponse(response, false);
-                                }
-                            });
-                            return;
-                        }
+			@Override
+			public void onResponse(final ImageContainer response, boolean isImmediate) {
+				// If this was an immediate response that was delivered inside
+				// of a layout
+				// pass do not set the image immediately as it will trigger a
+				// requestLayout
+				// inside of a layout. Instead, defer setting the image by
+				// posting back to
+				// the main thread.
+				if (isImmediate && isInLayoutPass) {
+					post(new Runnable() {
+						@Override
+						public void run() {
+							onResponse(response, false);
+						}
+					});
+					return;
+				}
 
-                        if (response.getBitmap() != null) {
-                            setImageBitmap(response.getBitmap());
-                        } else if (mDefaultImageId != 0) {
-                            setImageResource(mDefaultImageId);
-                        }
-                    }
-                }, maxWidth, maxHeight, scaleType);
+				if (response.getBitmap() != null) {
+					setImageBitmap(response.getBitmap());
+				} else if (mDefaultImageId != 0) {
+					setImageResource(mDefaultImageId);
+				}
+			}
+		};
+		ImageContainer newContainer;
+		if (mMaxWidth != 0 && mMaxHeight != 0) {
+			newContainer = mImageLoader.get(mUrl, imageListener, mMaxWidth, mMaxHeight, null, isClip, mCacheTag);
+		} else {
+			newContainer = mImageLoader.get(mUrl, imageListener, mCacheTag);
+		}
 
         // update the ImageContainer to be the new bitmap container.
         mImageContainer = newContainer;
@@ -217,4 +270,77 @@ public class NetworkImageView extends ImageView {
         super.drawableStateChanged();
         invalidate();
     }
+    // pending
+	/**
+	 * @see android.widget.ImageView#onDetachedFromWindow()
+	 */
+	@Override
+	protected void onDetachedFromWindow() {
+		// This has been detached from Window, so clear the drawable
+		setImageBitmap(null);
+
+		if (mImageContainer != null) {
+			// If the view was bound to an image request, cancel it and clear
+			// out the image from the view.
+			mImageContainer.cancelRequest();
+			// also clear out the container so we can reload the image if
+			// necessary.
+			mImageContainer = null;
+		}
+
+		super.onDetachedFromWindow();
+	}
+
+	/**
+	 * @see android.widget.ImageView#setImageDrawable(android.graphics.drawable.Drawable)
+	 */
+	@Override
+	public void setImageDrawable(Drawable drawable) {
+		// Keep hold of previous Drawable
+		final Drawable previousDrawable = getDrawable();
+
+		// Call super to set new Drawable
+		super.setImageDrawable(drawable);
+
+		// Notify new Drawable that it is being displayed
+		notifyDrawable(drawable, true);
+
+		// Notify old Drawable so it is no longer being displayed
+		notifyDrawable(previousDrawable, false);
+	}
+
+	@Override
+	public void setImageBitmap(Bitmap bitmap) {
+		BitmapDrawable drawable = null;
+		if (Utils.hasHoneycomb()) {
+			// Running on Honeycomb or newer, so wrap in a standard
+			// BitmapDrawable
+			drawable = new BitmapDrawable(null, bitmap);
+		} else {
+			// Running on Gingerbread or older, so wrap in a
+			// RecyclingBitmapDrawable
+			// which will recycle automagically
+			drawable = new RecyclingBitmapDrawable(null, bitmap);
+		}
+		setImageDrawable(drawable);
+	}
+
+	/**
+	 * Notifies the drawable that it's displayed state has changed.
+	 *
+	 * @param drawable
+	 * @param isDisplayed
+	 */
+	private static void notifyDrawable(Drawable drawable, final boolean isDisplayed) {
+		if (drawable instanceof RecyclingBitmapDrawable) {
+			// The drawable is a CountingBitmapDrawable, so notify it
+			((RecyclingBitmapDrawable) drawable).setIsDisplayed(isDisplayed);
+		} else if (drawable instanceof LayerDrawable) {
+			// The drawable is a LayerDrawable, so recurse on each layer
+			LayerDrawable layerDrawable = (LayerDrawable) drawable;
+			for (int i = 0, z = layerDrawable.getNumberOfLayers(); i < z; i++) {
+				notifyDrawable(layerDrawable.getDrawable(i), isDisplayed);
+			}
+		}
+	}
 }

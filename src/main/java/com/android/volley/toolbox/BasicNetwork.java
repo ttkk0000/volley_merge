@@ -120,7 +120,11 @@ public class BasicNetwork implements Network {
 
                 // Some responses such as 204s do not have content.  We must check.
                 if (httpResponse.getEntity() != null) {
-                  responseContents = entityToBytes(httpResponse.getEntity());
+					ProcessListener pListener = null;
+					if (request instanceof ImageRequest) {
+						pListener = ((ImageRequest) request).getProcessListener();
+					}
+					responseContents = entityToBytes(httpResponse.getEntity(), pListener);
                 } else {
                   // Add 0 byte response as a way of honestly representing a
                   // no-content request.
@@ -225,6 +229,7 @@ public class BasicNetwork implements Network {
 
     /** Reads the contents of HttpEntity into a byte[]. */
     private byte[] entityToBytes(HttpEntity entity) throws IOException, ServerError {
+		long contentLength = entity.getContentLength();
         PoolingByteArrayOutputStream bytes =
                 new PoolingByteArrayOutputStream(mPool, (int) entity.getContentLength());
         byte[] buffer = null;
@@ -237,6 +242,9 @@ public class BasicNetwork implements Network {
             int count;
             while ((count = in.read(buffer)) != -1) {
                 bytes.write(buffer, 0, count);
+				if (null != pListener) {
+					pListener.update((int) (bytes.size() * 100 / contentLength));
+				}
             }
             return bytes.toByteArray();
         } finally {

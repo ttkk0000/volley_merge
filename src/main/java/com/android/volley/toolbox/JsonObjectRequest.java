@@ -46,7 +46,11 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
             Listener<JSONObject> listener, ErrorListener errorListener) {
         super(method, url, (jsonRequest == null) ? null : jsonRequest.toString(), listener,
                     errorListener);
-    }
+    }	
+    public JsonObjectRequest(int method, String url, String jsonRequest,
+            Listener<JSONObject> listener, ErrorListener errorListener) {
+		super(method, url, jsonRequest, listener, errorListener);
+	}
 
     /**
      * Constructor which defaults to <code>GET</code> if <code>jsonRequest</code> is
@@ -65,8 +69,18 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
         try {
             String jsonString = new String(response.data,
                     HttpHeaderParser.parseCharset(response.headers, PROTOCOL_CHARSET));
-            return Response.success(new JSONObject(jsonString),
-                    HttpHeaderParser.parseCacheHeaders(response));
+            JSONObject json = null;
+			if(jsonString != null && !jsonString.isEmpty()) {
+				if(jsonString.startsWith("[")) {
+					if(!"[]".equals(jsonString)) {
+						json = new JSONObject();
+						json.put("results", jsonString);
+					}
+				} else {
+					json = new JSONObject(jsonString);
+				}
+			}
+			return Response.success(json, HttpHeaderParser.parseCacheHeaders(response));
         } catch (UnsupportedEncodingException e) {
             return Response.error(new ParseError(e));
         } catch (JSONException je) {

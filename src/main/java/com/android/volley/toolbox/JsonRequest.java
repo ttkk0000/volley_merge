@@ -16,6 +16,8 @@
 
 package com.android.volley.toolbox;
 
+import net.comikon.reader.utils.Log;
+
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -62,6 +64,8 @@ public abstract class JsonRequest<T> extends Request<T> {
 
     @Override
     protected void deliverResponse(T response) {
+	    // edit by dean
+		Log.d("****Dean****", getTag() + ":::" +"volley response: " + (response == null ? "" : response.toString()));
         mListener.onResponse(response);
     }
 

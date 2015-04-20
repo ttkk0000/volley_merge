@@ -99,6 +99,10 @@ public class DiskBasedCache implements Cache {
         VolleyLog.d("Cache cleared.");
     }
 
+	public float getTotalSize() {
+		return (float) mTotalSize / 1024 / 1024;
+	}
+
     /**
      * Returns the cache entry with the specified key if it exists, null otherwise.
      */
@@ -205,10 +209,13 @@ public class DiskBasedCache implements Cache {
                 throw new IOException();
             }
             fos.write(entry.data);
-            fos.close();
+            
             putEntry(key, e);
             return;
         } catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			Utils.close(fos);
         }
         boolean deleted = file.delete();
         if (!deleted) {

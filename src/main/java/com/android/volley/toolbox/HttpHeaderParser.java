@@ -70,12 +70,14 @@ public class HttpHeaderParser {
                 } else if (token.startsWith("max-age=")) {
                     try {
                         maxAge = Long.parseLong(token.substring(8));
-                    } catch (Exception e) {
+                    } catch (Exception e) {				
+                        e.printStackTrace();
                     }
                 } else if (token.startsWith("stale-while-revalidate=")) {
                     try {
                         staleWhileRevalidate = Long.parseLong(token.substring(23));
                     } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 } else if (token.equals("must-revalidate") || token.equals("proxy-revalidate")) {
                     mustRevalidate = true;

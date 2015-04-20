@@ -57,6 +57,7 @@ public class StringRequest extends Request<String> {
 
     @Override
     protected void deliverResponse(String response) {
+		Log.d("dean", "String volley response: " + (response == null ? "" : response.toString()));
         mListener.onResponse(response);
     }
 

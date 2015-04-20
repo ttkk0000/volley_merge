@@ -15,6 +15,8 @@
  */
 
 package com.android.volley.toolbox;
+									
+import javax.net.ssl.SSLSocketFactory;
 
 import android.content.Context;
 import android.content.pm.PackageInfo;
@@ -39,7 +41,7 @@ public class Volley {
      * @param stack An {@link HttpStack} to use for the network, or null for default.
      * @return A started {@link RequestQueue} instance.
      */
-    public static RequestQueue newRequestQueue(Context context, HttpStack stack) {
+    public static RequestQueue newRequestQueue(Context context, HttpStack stack, SSLSocketFactory socketFactory) {
         File cacheDir = new File(context.getCacheDir(), DEFAULT_CACHE_DIR);
 
         String userAgent = "volley/0";
@@ -48,12 +50,17 @@ public class Volley {
             PackageInfo info = context.getPackageManager().getPackageInfo(packageName, 0);
             userAgent = packageName + "/" + info.versionCode;
         } catch (NameNotFoundException e) {
+			e.printStackTrace();
         }
 
         if (stack == null) {
             if (Build.VERSION.SDK_INT >= 9) {
-                stack = new HurlStack();
-            } else {
+				if (socketFactory == null) {
+                    stack = new HurlStack();
+                } else {
+			 		stack = new HurlStack(null, socketFactory);
+				}
+			} else {
                 // Prior to Gingerbread, HttpUrlConnection was unreliable.
                 // See: http://android-developers.blogspot.com/2011/09/androids-http-clients.html
                 stack = new HttpClientStack(AndroidHttpClient.newInstance(userAgent));
@@ -75,6 +82,10 @@ public class Volley {
      * @return A started {@link RequestQueue} instance.
      */
     public static RequestQueue newRequestQueue(Context context) {
-        return newRequestQueue(context, null);
-    }
+		return newRequestQueue(context, null, null);
+	}
+
+	public static RequestQueue newRequestQueue(Context context, SSLSocketFactory socketFactory) {
+		return newRequestQueue(context, null, socketFactory);
+	}
 }

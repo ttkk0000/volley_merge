@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.comikon.reader.utils.Log;
 /**
  * A request dispatch queue with a thread pool of dispatchers.
  *
@@ -226,11 +227,14 @@ public class RequestQueue {
      */
     public <T> Request<T> add(Request<T> request) {
         // Tag the request as belonging to this queue and add it to the set of current requests.
+		if (request == null) {
+			return null;
+		}
         request.setRequestQueue(this);
         synchronized (mCurrentRequests) {
             mCurrentRequests.add(request);
         }
-
+	    Log.i("****Dean****", request.getTag() + ":::" +request.getUrl());
         // Process requests in the order they are added.
         request.setSequence(getSequenceNumber());
         request.addMarker("add-to-queue");

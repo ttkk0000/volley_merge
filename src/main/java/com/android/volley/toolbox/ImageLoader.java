@@ -15,12 +15,15 @@
  */
 package com.android.volley.toolbox;
 
+import net.comikon.reader.utils.Log;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
+  
+import com.android.volley.ProcessListener;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response.ErrorListener;
@@ -178,17 +181,21 @@ public class ImageLoader {
      *
      * @param requestUrl The URL of the image to be loaded.
      */
-    public ImageContainer get(String requestUrl, final ImageListener listener) {
-        return get(requestUrl, listener, 0, 0);
-    }
+    public ImageContainer get(String requestUrl, final ImageListener listener, String cacheTag) {
+        return get(requestUrl, listener, 0, 0, null, cacheTag);
+    }															
+
+    public ImageContainer get(String requestUrl, ImageListener listener, ProcessListener processListener, String cacheTag) {
+		return get(requestUrl, listener, 0, 0, processListener, cacheTag);
+	}
 
     /**
      * Equivalent to calling {@link #get(String, ImageListener, int, int, ScaleType)} with
      * {@code Scaletype == ScaleType.CENTER_INSIDE}.
      */
     public ImageContainer get(String requestUrl, ImageListener imageListener,
-            int maxWidth, int maxHeight) {
-        return get(requestUrl, imageListener, maxWidth, maxHeight, ScaleType.CENTER_INSIDE);
+            int maxWidth, int maxHeight, ProcessListener processListener, String cacheTag) {
+        return get(requestUrl, imageListener, maxWidth, maxHeight, ScaleType.CENTER_INSIDE, processListener, false, cacheTag);
     }
 
     /**
@@ -205,7 +212,7 @@ public class ImageLoader {
      *     the currently available image (default if remote is not loaded).
      */
     public ImageContainer get(String requestUrl, ImageListener imageListener,
-            int maxWidth, int maxHeight, ScaleType scaleType) {
+            int maxWidth, int maxHeight, ScaleType scaleType, ProcessListener processListener, boolean clip, String cacheTag) {
 
         // only fulfill requests that were initiated from the main thread.
         throwIfNotOnMainThread();
@@ -259,7 +266,7 @@ public class ImageLoader {
             public void onErrorResponse(VolleyError error) {
                 onGetImageError(cacheKey, error);
             }
-        });
+        }, processListener, clip);
     }
 
     /**
@@ -473,6 +480,8 @@ public class ImageLoader {
                                 container.mBitmap = bir.mResponseBitmap;
                                 container.mListener.onResponse(container, false);
                             } else {
+								// edit by dean
+								Log.d("TTT", "volley error: " + (bir.getError() == null ? "" : bir.getError().toString()));
                                 container.mListener.onErrorResponse(bir.getError());
                             }
                         }
@@ -492,6 +501,8 @@ public class ImageLoader {
             throw new IllegalStateException("ImageLoader must be invoked from the main thread.");
         }
     }
+    // modify by ttt below
+	// start
     /**
      * Creates a cache key for use with the L1 cache.
      * @param url The URL of the request.
@@ -499,9 +510,13 @@ public class ImageLoader {
      * @param maxHeight The max-height of the output.
      * @param scaleType The scaleType of the imageView.
      */
-    private static String getCacheKey(String url, int maxWidth, int maxHeight, ScaleType scaleType) {
-        return new StringBuilder(url.length() + 12).append("#W").append(maxWidth)
-                .append("#H").append(maxHeight).append("#S").append(scaleType.ordinal()).append(url)
-                .toString();
-    }
+//    private static String getCacheKey(String url, int maxWidth, int maxHeight, ScaleType scaleType) {
+//        return new StringBuilder(url.length() + 12).append("#W").append(maxWidth)
+//                .append("#H").append(maxHeight).append("#S").append(scaleType.ordinal()).append(url)
+//                .toString();
+//    }
+	  public static String getCacheKey(String cacheTag, String url) {
+		  return cacheTag + "-" + url;
+	  }
+    // end
 }

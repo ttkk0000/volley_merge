@@ -16,6 +16,7 @@
 
 package com.android.volley;
 
+import net.comikon.reader.utils.Log;
 import android.net.TrafficStats;
 import android.net.Uri;
 import android.os.Handler;
@@ -463,6 +464,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
                 encodedParams.append(URLEncoder.encode(entry.getValue(), paramsEncoding));
                 encodedParams.append('&');
             }
+			// edit by deans
+			Log.d("deans", "params: " + encodedParams.toString());
             return encodedParams.toString().getBytes(paramsEncoding);
         } catch (UnsupportedEncodingException uee) {
             throw new RuntimeException("Encoding not supported: " + paramsEncoding, uee);
@@ -573,6 +576,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * @param error Error details
      */
     public void deliverError(VolleyError error) {
+		// edit by dean
+		Log.d("*****Dean*****", "tag = " + getTag() + ", volley error: " + (error == null ? "" : error.toString()));
         if (mErrorListener != null) {
             mErrorListener.onErrorResponse(error);
         }

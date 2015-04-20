@@ -16,6 +16,8 @@
 
 package com.android.volley.toolbox;
 
+import net.comikon.reader.utils.Log;   
+import com.android.volley.ProcessListener;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
@@ -48,6 +50,8 @@ public class ImageRequest extends Request<Bitmap> {
     private final int mMaxHeight;
     private ScaleType mScaleType;
 
+	private ProcessListener mProcessListener;
+	private boolean isClip;
     /** Decoding lock so that we don't decode more than one image at a time (to avoid OOM's) */
     private static final Object sDecodeLock = new Object();
 
@@ -69,8 +73,12 @@ public class ImageRequest extends Request<Bitmap> {
      * @param decodeConfig Format to decode the bitmap to
      * @param errorListener Error listener, or null to ignore errors
      */
+	public ImageRequest(String url, Response.Listener<Bitmap> listener, int maxWidth, int maxHeight, Config decodeConfig, Response.ErrorListener errorListener, ProcessListener processListener) {
+		this(url, listener, maxWidth, maxHeight, decodeConfig, errorListener, processListener, false);
+	}
     public ImageRequest(String url, Response.Listener<Bitmap> listener, int maxWidth, int maxHeight,
-            ScaleType scaleType, Config decodeConfig, Response.ErrorListener errorListener) {
+            ScaleType scaleType, Config decodeConfig, Response.ErrorListener errorListener,
+            ProcessListener processListener, boolean clip) {
         super(Method.GET, url, errorListener); 
         setRetryPolicy(
                 new DefaultRetryPolicy(IMAGE_TIMEOUT_MS, IMAGE_MAX_RETRIES, IMAGE_BACKOFF_MULT));
@@ -79,6 +87,8 @@ public class ImageRequest extends Request<Bitmap> {
         mMaxWidth = maxWidth;
         mMaxHeight = maxHeight;
         mScaleType = scaleType;
+	    mProcessListener = processListener;
+		isClip = clip;
     }
 
     /**
@@ -87,9 +97,10 @@ public class ImageRequest extends Request<Bitmap> {
      */
     @Deprecated
     public ImageRequest(String url, Response.Listener<Bitmap> listener, int maxWidth, int maxHeight,
-            Config decodeConfig, Response.ErrorListener errorListener) {
+            Config decodeConfig, Response.ErrorListener errorListener,
+            ProcessListener processListener, boolean clip) {
         this(url, listener, maxWidth, maxHeight,
-                ScaleType.CENTER_INSIDE, decodeConfig, errorListener);
+                ScaleType.CENTER_INSIDE, decodeConfig, errorListener, ProcessListener processListener, boolean clip);
     }
     @Override
     public Priority getPriority() {
@@ -171,6 +182,8 @@ public class ImageRequest extends Request<Bitmap> {
         byte[] data = response.data;
         BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
         Bitmap bitmap = null;
+		int desiredWidth = 0;
+		int desiredHeight = 0;
         if (mMaxWidth == 0 && mMaxHeight == 0) {
             decodeOptions.inPreferredConfig = mDecodeConfig;
             bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
@@ -182,11 +195,26 @@ public class ImageRequest extends Request<Bitmap> {
             int actualHeight = decodeOptions.outHeight;
 
             // Then compute the dimensions we would ideally like to decode to.
-            int desiredWidth = getResizedDimension(mMaxWidth, mMaxHeight,
-                    actualWidth, actualHeight, mScaleType);
-            int desiredHeight = getResizedDimension(mMaxHeight, mMaxWidth,
-                    actualHeight, actualWidth, mScaleType);
+//            int desiredWidth = getResizedDimension(mMaxWidth, mMaxHeight,
+//                    actualWidth, actualHeight, mScaleType);
+//            int desiredHeight = getResizedDimension(mMaxHeight, mMaxWidth,
+//                    actualHeight, actualWidth, mScaleType);
 
+			if (isClip) {
+				// 裁剪以适配,保证长宽都不小于目标长宽
+				float wradio = (float) actualWidth / mMaxWidth;
+				float hradio = (float) actualHeight / mMaxHeight;
+				if (wradio < hradio) {// 宽较小
+					desiredWidth = (int) (actualWidth / wradio);
+					desiredHeight = (int) (actualHeight / wradio);
+				} else {
+					desiredWidth = (int) (actualWidth / hradio);
+					desiredHeight = (int) (actualHeight / hradio);
+				}
+			} else {
+				desiredWidth = getResizedDimension(mMaxWidth, mMaxHeight, actualWidth, actualHeight);
+				desiredHeight = getResizedDimension(mMaxHeight, mMaxWidth, actualHeight, actualWidth);
+			}
             // Decode to the nearest power of two scaling factor.
             decodeOptions.inJustDecodeBounds = false;
             // TODO(ficus): Do we need this or is it okay since API 8 doesn't support it?
@@ -198,9 +226,13 @@ public class ImageRequest extends Request<Bitmap> {
 
             // If necessary, scale down to the maximal acceptable size.
             if (tempBitmap != null && (tempBitmap.getWidth() > desiredWidth ||
-                    tempBitmap.getHeight() > desiredHeight)) {
-                bitmap = Bitmap.createScaledBitmap(tempBitmap,
+                    tempBitmap.getHeight() > desiredHeight)) {				 
+                try {
+                    bitmap = Bitmap.createScaledBitmap(tempBitmap,
                         desiredWidth, desiredHeight, true);
+				} catch (NullPointerException e) {
+					e.printStackTrace();
+				}
                 tempBitmap.recycle();
             } else {
                 bitmap = tempBitmap;
@@ -210,12 +242,20 @@ public class ImageRequest extends Request<Bitmap> {
         if (bitmap == null) {
             return Response.error(new ParseError(response));
         } else {
+			if (isClip) {
+				bitmap = ImageCrop(bitmap);
+			}
             return Response.success(bitmap, HttpHeaderParser.parseCacheHeaders(response));
         }
     }
 
+	public Bitmap ImageCrop(Bitmap bitmap) {
+		return Bitmap.createScaledBitmap(bitmap, mMaxWidth, mMaxHeight, true);
+	}
+
     @Override
     protected void deliverResponse(Bitmap response) {
+		Log.d("dean", "image volley response: " + (response == null ? "" : response.toString()));
         mListener.onResponse(response);
     }
 
@@ -241,4 +281,7 @@ public class ImageRequest extends Request<Bitmap> {
 
         return (int) n;
     }
+    public ProcessListener getProcessListener() {
+		return mProcessListener;
+	}
 }
