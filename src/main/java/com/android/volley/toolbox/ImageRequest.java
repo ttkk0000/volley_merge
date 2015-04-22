@@ -201,10 +201,10 @@ public class ImageRequest extends Request<Bitmap> {
 //                    actualHeight, actualWidth, mScaleType);
 
 			if (isClip) {
-				// �ü�������,��֤������С��Ŀ�곤��
+				// 裁剪以适配,保证长宽都不小于目标长宽
 				float wradio = (float) actualWidth / mMaxWidth;
 				float hradio = (float) actualHeight / mMaxHeight;
-				if (wradio < hradio) {// ���С
+				if (wradio < hradio) {// 宽较小
 					desiredWidth = (int) (actualWidth / wradio);
 					desiredHeight = (int) (actualHeight / wradio);
 				} else {

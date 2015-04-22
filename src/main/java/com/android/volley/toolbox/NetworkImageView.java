@@ -66,12 +66,12 @@ public class NetworkImageView extends ImageView {
 	private int mMaxHeight;
 
 	/**
-	 * �Ƿ�ü�
+	 * 是否裁剪
 	 */
 	private boolean isClip = false;
 
 	/**
-	 * ����Tag�������ڸ���ҳ���CacheKey
+	 * 缓存Tag，区别于各个页面的CacheKey
 	 */
 	private String mCacheTag;
 

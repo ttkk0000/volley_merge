@@ -151,6 +151,9 @@ public class HurlStack implements HttpStack {
      * Create an {@link HttpURLConnection} for the specified {@code url}.
      */
     protected HttpURLConnection createConnection(URL url) throws IOException {
+		if (url.toString().contains("https")) { 
+            HTTPSTrustManager.allowAllSSL();  
+      }  
         return (HttpURLConnection) url.openConnection();
     }
 
